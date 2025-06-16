@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import QuickStatsCard from "@/components/QuickStatsCard";
 import TipsCard from "@/components/TipsCard";
 import ApplicationModal from "@/components/ApplicationModal";
+import LandingPage from "@/components/LandingPage";
 import { JobApplication } from "@/types/JobApplication";
 import { useAuth } from "@/hooks/useAuth";
 import { useApplications } from "@/hooks/useApplications";
@@ -19,6 +20,7 @@ const Index = () => {
   const { user, loading } = useAuth();
   const { applications, dataLoading, addApplication, updateApplication, deleteApplication } = useApplications(user);
   const [showForm, setShowForm] = useState(false);
+  const [showAuthForm, setShowAuthForm] = useState(false);
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
 
   const handleEditApplication = (application: JobApplication) => {
@@ -43,14 +45,27 @@ const Index = () => {
     setEditingApplication(null);
   };
 
+  const handleGetStarted = () => {
+    setShowAuthForm(true);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthForm(false);
+  };
+
   // Show loading spinner while checking auth
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  // Show auth form if user is not authenticated
+  // Show auth form if user clicked get started
+  if (showAuthForm && !user) {
+    return <AuthForm onSuccess={handleAuthSuccess} />;
+  }
+
+  // Show landing page if user is not authenticated
   if (!user) {
-    return <AuthForm onSuccess={() => {}} />;
+    return <LandingPage onGetStarted={handleGetStarted} />;
   }
 
   return (
