@@ -44,10 +44,10 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-16">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <Briefcase className="w-6 h-6 text-white" />
+            <div className="bg-blue-600 p-3 rounded-xl shadow-lg">
+              <Briefcase className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Job Tracker</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Job Tracker</h1>
           </div>
           <Button 
             onClick={onGetStarted}
