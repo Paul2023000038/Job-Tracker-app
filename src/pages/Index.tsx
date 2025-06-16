@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import JobApplicationList from "@/components/JobApplicationList";
@@ -70,39 +70,67 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header with sign out */}
-        <Header />
-
-        {/* Add Application Button */}
-        <div className="flex justify-end mb-8">
-          <Button 
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add Application
-          </Button>
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Header with welcome message */}
+        <div className="mb-8">
+          <Header />
+          <div className="mt-4">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Welcome back! 👋
+            </h1>
+            <p className="text-gray-600">
+              {applications.length === 0 
+                ? "Ready to start tracking your job applications? Add your first one below!"
+                : `You have ${applications.length} application${applications.length === 1 ? '' : 's'} tracked. Keep up the great work!`
+              }
+            </p>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <StatsCards applications={applications} />
+        {/* Quick Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <Button 
+            onClick={() => setShowForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl flex-1 sm:flex-none"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add New Application
+          </Button>
+          {applications.length > 0 && (
+            <div className="text-sm text-gray-600 flex items-center">
+              <Sparkles className="w-4 h-4 mr-1 text-yellow-500" />
+              {applications.filter(app => app.status === 'applied').length} applications awaiting response
+            </div>
+          )}
+        </div>
+
+        {/* Stats Cards - Only show if user has applications */}
+        {applications.length > 0 && (
+          <div className="mb-8">
+            <StatsCards applications={applications} />
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Applications List */}
           <div className="lg:col-span-2">
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  Recent Applications
+            <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between text-xl">
+                  <span>Your Applications</span>
+                  {applications.length > 0 && (
+                    <span className="text-sm font-normal text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      {applications.length} total
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 {dataLoading ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading applications...</p>
+                    <p className="text-gray-600">Loading your applications...</p>
                   </div>
                 ) : (
                   <JobApplicationList 
@@ -115,10 +143,34 @@ const Index = () => {
             </Card>
           </div>
 
-          {/* Quick Stats Sidebar */}
+          {/* Sidebar */}
           <div className="space-y-6">
-            <QuickStatsCard applications={applications} />
-            {applications.length > 0 && <TipsCard />}
+            {applications.length > 0 ? (
+              <>
+                <QuickStatsCard applications={applications} />
+                <TipsCard />
+              </>
+            ) : (
+              <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg text-center">Getting Started</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center space-y-4">
+                  <div className="text-6xl mb-4">🚀</div>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Start your job search journey by adding your first application. 
+                    Track companies, positions, and application status all in one place!
+                  </p>
+                  <Button 
+                    onClick={() => setShowForm(true)}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add First Application
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
