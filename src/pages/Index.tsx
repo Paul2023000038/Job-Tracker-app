@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Clock, TrendingUp, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import JobApplicationForm from "@/components/JobApplicationForm";
@@ -98,7 +97,7 @@ const Index = () => {
         position: data.position,
         location: data.location || '',
         salary: data.salary || '',
-        status: data.status,
+        status: data.status as JobApplication['status'],
         appliedDate: data.applied_date,
         source: data.source,
         notes: data.notes || '',
