@@ -1,39 +1,127 @@
 
 import { useState, useEffect } from "react";
-import { Plus, Briefcase, Clock, TrendingUp, CheckCircle } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import JobApplicationForm from "@/components/JobApplicationForm";
 import JobApplicationList from "@/components/JobApplicationList";
 import StatsCards from "@/components/StatsCards";
+import Header from "@/components/Header";
+import AuthForm from "@/components/auth/AuthForm";
 import { JobApplication } from "@/types/JobApplication";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
+  const { user, loading } = useAuth();
+  const { toast } = useToast();
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  // Load applications from localStorage on component mount
+  // Load applications from Supabase when user is authenticated
   useEffect(() => {
-    const savedApplications = localStorage.getItem('jobApplications');
-    if (savedApplications) {
-      setApplications(JSON.parse(savedApplications));
+    if (user) {
+      loadApplications();
+    } else {
+      setApplications([]);
+      setDataLoading(false);
     }
-  }, []);
+  }, [user]);
 
-  // Save applications to localStorage whenever applications change
-  useEffect(() => {
-    localStorage.setItem('jobApplications', JSON.stringify(applications));
-  }, [applications]);
+  const loadApplications = async () => {
+    try {
+      setDataLoading(true);
+      const { data, error } = await supabase
+        .from('job_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  const handleAddApplication = (application: Omit<JobApplication, 'id' | 'createdAt'>) => {
-    const newApplication: JobApplication = {
-      ...application,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-    setApplications(prev => [newApplication, ...prev]);
-    setShowForm(false);
+      if (error) throw error;
+
+      const formattedApplications: JobApplication[] = data.map(app => ({
+        id: app.id,
+        company: app.company,
+        position: app.position,
+        location: app.location || '',
+        salary: app.salary || '',
+        status: app.status as JobApplication['status'],
+        appliedDate: app.applied_date,
+        source: app.source,
+        notes: app.notes || '',
+        contactPerson: app.contact_person || '',
+        contactEmail: app.contact_email || '',
+        jobUrl: app.job_url || '',
+        createdAt: app.created_at,
+      }));
+
+      setApplications(formattedApplications);
+    } catch (error: any) {
+      toast({
+        title: "Error loading applications",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  const handleAddApplication = async (application: Omit<JobApplication, 'id' | 'createdAt'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('job_applications')
+        .insert([{
+          user_id: user?.id,
+          company: application.company,
+          position: application.position,
+          location: application.location,
+          salary: application.salary,
+          status: application.status,
+          applied_date: application.appliedDate,
+          source: application.source,
+          notes: application.notes,
+          contact_person: application.contactPerson,
+          contact_email: application.contactEmail,
+          job_url: application.jobUrl,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newApplication: JobApplication = {
+        id: data.id,
+        company: data.company,
+        position: data.position,
+        location: data.location || '',
+        salary: data.salary || '',
+        status: data.status,
+        appliedDate: data.applied_date,
+        source: data.source,
+        notes: data.notes || '',
+        contactPerson: data.contact_person || '',
+        contactEmail: data.contact_email || '',
+        jobUrl: data.job_url || '',
+        createdAt: data.created_at,
+      };
+
+      setApplications(prev => [newApplication, ...prev]);
+      setShowForm(false);
+      
+      toast({
+        title: "Application added",
+        description: "Your job application has been saved successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error adding application",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditApplication = (application: JobApplication) => {
@@ -41,23 +129,77 @@ const Index = () => {
     setShowForm(true);
   };
 
-  const handleUpdateApplication = (updatedApplication: Omit<JobApplication, 'id' | 'createdAt'>) => {
-    if (editingApplication) {
+  const handleUpdateApplication = async (updatedApplication: Omit<JobApplication, 'id' | 'createdAt'>) => {
+    if (!editingApplication) return;
+
+    try {
+      const { error } = await supabase
+        .from('job_applications')
+        .update({
+          company: updatedApplication.company,
+          position: updatedApplication.position,
+          location: updatedApplication.location,
+          salary: updatedApplication.salary,
+          status: updatedApplication.status,
+          applied_date: updatedApplication.appliedDate,
+          source: updatedApplication.source,
+          notes: updatedApplication.notes,
+          contact_person: updatedApplication.contactPerson,
+          contact_email: updatedApplication.contactEmail,
+          job_url: updatedApplication.jobUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingApplication.id);
+
+      if (error) throw error;
+
       const updated: JobApplication = {
         ...updatedApplication,
         id: editingApplication.id,
         createdAt: editingApplication.createdAt,
       };
+
       setApplications(prev => 
         prev.map(app => app.id === editingApplication.id ? updated : app)
       );
       setShowForm(false);
       setEditingApplication(null);
+      
+      toast({
+        title: "Application updated",
+        description: "Your job application has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating application",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
-  const handleDeleteApplication = (id: string) => {
-    setApplications(prev => prev.filter(app => app.id !== id));
+  const handleDeleteApplication = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('job_applications')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setApplications(prev => prev.filter(app => app.id !== id));
+      
+      toast({
+        title: "Application deleted",
+        description: "Your job application has been deleted.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting application",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCloseForm = () => {
@@ -65,15 +207,31 @@ const Index = () => {
     setEditingApplication(null);
   };
 
+  // Show loading spinner while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth form if user is not authenticated
+  if (!user) {
+    return <AuthForm onSuccess={() => {}} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Job Tracker</h1>
-            <p className="text-lg text-gray-600">Manage your job applications and track your progress</p>
-          </div>
+        {/* Header with sign out */}
+        <Header />
+
+        {/* Add Application Button */}
+        <div className="flex justify-end mb-8">
           <Button 
             onClick={() => setShowForm(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
@@ -93,21 +251,27 @@ const Index = () => {
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
-                  <Briefcase className="w-6 h-6 text-blue-600" />
                   Recent Applications
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <JobApplicationList 
-                  applications={applications}
-                  onEdit={handleEditApplication}
-                  onDelete={handleDeleteApplication}
-                />
+                {dataLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading applications...</p>
+                  </div>
+                ) : (
+                  <JobApplicationList 
+                    applications={applications}
+                    onEdit={handleEditApplication}
+                    onDelete={handleDeleteApplication}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Quick Actions & Recent Activity */}
+          {/* Quick Stats Sidebar */}
           <div className="space-y-6">
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader>
