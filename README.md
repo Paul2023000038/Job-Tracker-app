@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/9de9f852-1610-4e32-9e32-05e83c5b3024
+**URL**: https://opportunity-dashboard-app.lovable.app/
 
 ## How can I edit this code?
 
